@@ -1,0 +1,96 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "5100:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "3002:3002"
+    environment:
+      - DB_HOST=database
+      - DB_PORT=3306
+      - DB_USER=supporty
+      - DB_PASSWORD=2025
+      - DB_NAME=supportydb
+      - JWT_SECRET=2025
+    depends_on:
+      - database
+    networks:
+      - app-network
+
+  database:
+    image: mariadb:latest
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=2025
+      - MYSQL_DATABASE=supportydb
+      - MYSQL_USER=supporty
+      - MYSQL_PASSWORD=2025
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=2025"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      
+# For Testing only
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8099:80
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=database
+      - PMA_PORT=3306
+    networks:
+      - app-network
+
+#  cadvisor:
+#    image: gcr.io/cadvisor/cadvisor
+#    volumes:
+#      - /:/rootfs:ro
+#      - /var/run:/var/run:rw
+#      - /sys:/sys:ro
+#      - /var/lib/docker/:/var/lib/docker:ro
+#    ports:
+#      - 8081:8080
+#    networks:
+#      - app-network
+#    restart: always
+#    deploy:
+#      mode: global
+  
+#  dozzle:
+#    image: amir20/dozzle:latest
+#    container_name: Dozzle
+#    ports:
+#      - "18888:8080"
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+#    networks:
+#      - app-network
+#    restart: unless-stopped
+# end testing
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mariadb_data:
+    driver: local
